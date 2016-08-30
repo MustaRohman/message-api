@@ -58,6 +58,25 @@ app.get('/messages', middleware.requireAuthentication, function(req, res) {
 
 })
 
+app.get('/messages/:id', middleware.requireAuthentication, function (req, res) {
+	var messageId = parseInt(req.params.id, 10);
+
+	db.message.findOne({
+		where: {
+			userId: req.user.get('id'),
+			id: messageId
+		}
+	}).then(function (message) {
+		if (message) {
+			res.json(message.toJSON());
+		} else {
+			res.status(404).send();
+		}
+	}, function (e) {
+		res.status(500).json(e);
+	})
+})
+
 
 // ---------------------   Login   ----------------------
 
