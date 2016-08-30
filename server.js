@@ -13,6 +13,17 @@ app.get('/', function(req, res) {
 	res.send('Message API root');
 });
 
+// ------------------- Messages --------------------
+
+app.post('/messages', function(req, res) {
+	var body = _.pick(req.body, 'text');
+
+	db.message.create(body).then(function(message) {
+		res.json(message.toJSON());
+	}, function (e) {
+		res.status(400).send();
+	})
+})
 
 
 // ------------------- Login --------------------

@@ -17,8 +17,12 @@ if (env === 'production') {
 var db = {};
 
 db.user = sequelize.import(__dirname + '/models/user.js');
-// db.message = sequelize.import(__dirname + '/models/message.js');
+db.message = sequelize.import(__dirname + '/models/message.js');
 // db.conversation = sequelize.import(__dirname + '/models/conversation.js');
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
+
+db.user.hasMany(db.message);
+db.message.belongsTo(db.user);
+
 module.exports = db;
