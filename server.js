@@ -13,20 +13,53 @@ app.get('/', function(req, res) {
 	res.send('Message API root');
 });
 
-// ------------------- Messages --------------------
+// ---------------------   Messages   ----------------------
 
-app.post('/messages', function(req, res) {
+app.post('/messages', middleware.requireAuthentication, function(req, res) {
 	var body = _.pick(req.body, 'text');
+	// body.userId = req.user.get('id');
 
 	db.message.create(body).then(function(message) {
-		res.json(message.toJSON());
-	}, function (e) {
+		req.user.addMessage(message).then(function () {
+			return message.reload();
+		}).then(function (message) {
+			res.json(message.toJSON());
+		})
+	}, function(e) {
 		res.status(400).send();
 	})
 })
 
+// GET /todos?search=hello
 
-// ------------------- Login --------------------
+app.get('/messages', middleware.requireAuthentication, function(req, res) {
+	var query = req.query;
+	var where = {
+		userId: req.user.get('id')
+	};
+
+	if (query.hasOwnProperty('search') && query.search.length > 0) {
+		where.text = {
+			$like: '%' + query.search + '%'
+		}
+	}
+
+	db.message.findAll({
+		where: where
+	}).then(function(messages) {
+		if (messages) {
+			res.json(messages);
+		} else {
+			res.status(404).send();
+		}
+	}, function(e) {
+		res.status(500).send();
+	})
+
+})
+
+
+// ---------------------   Login   ----------------------
 
 app.post('/users', function(req, res) {
 	var body = _.pick(req.body, 'email', 'password');
@@ -56,7 +89,7 @@ app.post('/users/login', function(req, res) {
 });
 
 db.sequelize.sync({
-	force: true
+	// force: true
 }).then(function() {
 	app.listen(PORT, function() {
 		console.log('Express listening on port ' + PORT + '!');
