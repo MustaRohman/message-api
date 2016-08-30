@@ -20,9 +20,9 @@ app.post('/messages', middleware.requireAuthentication, function(req, res) {
 	// body.userId = req.user.get('id');
 
 	db.message.create(body).then(function(message) {
-		req.user.addMessage(message).then(function () {
+		req.user.addMessage(message).then(function() {
 			return message.reload();
-		}).then(function (message) {
+		}).then(function(message) {
 			res.json(message.toJSON());
 		})
 	}, function(e) {
@@ -58,7 +58,7 @@ app.get('/messages', middleware.requireAuthentication, function(req, res) {
 
 })
 
-app.get('/messages/:id', middleware.requireAuthentication, function (req, res) {
+app.get('/messages/:id', middleware.requireAuthentication, function(req, res) {
 	var messageId = parseInt(req.params.id, 10);
 
 	db.message.findOne({
@@ -66,17 +66,46 @@ app.get('/messages/:id', middleware.requireAuthentication, function (req, res) {
 			userId: req.user.get('id'),
 			id: messageId
 		}
-	}).then(function (message) {
+	}).then(function(message) {
 		if (message) {
 			res.json(message.toJSON());
 		} else {
 			res.status(404).send();
 		}
-	}, function (e) {
+	}, function(e) {
 		res.status(500).json(e);
 	})
 })
 
+app.put('/messages/:id', middleware.requireAuthentication, function(req, res) {
+	var messageId = parseInt(req.params.id, 10);
+	var body = _.pick(req.body, 'text');
+	var attributes = {};
+
+	if (body.hasOwnProperty('text')) {
+		attributes.text = body.text;
+	}
+
+	db.message.findOne({
+		where: {
+			id: messageId,
+			userId: req.user.get('id')
+		}
+	}).then(function(message) {
+		if (message) {
+			message.update(attributes).then(function(message) {
+				res.json(message.toJSON());
+			}, function(e) {
+				res.status(400).send();
+			})
+		} else {
+			res.status(404).send();
+		}
+	}, function(e) {
+		res.status(500).json(e);
+	})
+
+})
 
 // ---------------------   Login   ----------------------
 
