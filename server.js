@@ -16,7 +16,7 @@ app.get('/', function(req, res) {
 // ---------------------   Messages   ----------------------
 
 app.post('/messages', middleware.requireAuthentication, function(req, res) {
-	var body = _.pick(req.body, 'text');
+	var body = _.pick(req.body, 'text', 'conversationId');
 	// body.userId = req.user.get('id');
 
 	db.message.create(body).then(function(message) {
@@ -127,6 +127,50 @@ app.delete('/messages/:id', middleware.requireAuthentication, function(req, res)
 		res.status(500).send();
 	})
 });
+
+// ---------------------   Conversation   ----------------------
+
+app.post('/conversations', middleware.requireAuthentication, function(req, res) {
+	var body = _.pick(req.body, 'recipientUser');
+	body.userId = req.user.get('id');
+
+	if (!body.hasOwnProperty('recipientUser')) {
+		return res.status(400).send();
+	}
+
+	db.user.findOne({
+		where: {
+			email: body.recipientUser
+		}
+	}).then(function(user) {
+		if (user) {
+			db.conversation.create(body).then(function(conversation) {
+				res.json(conversation.toJSON());
+			}, function(e) {
+				res.status(500).json(e);
+			})
+		} else {
+			res.status(400).send();
+		}
+	}, function(e) {
+		res.status(500).send();
+	});
+})
+
+app.get('/conversations', middleware.requireAuthentication, function function_name(req, res) {
+	var where = {
+		userId: req.user.get('id')
+	}
+
+	db.conversation.findAll({
+		where: where
+	}).then(function(conversations) {
+		res.json(conversations);
+	}, function (e) {
+		res.status(404).send();
+	})
+})
+
 
 // ---------------------   Login   ----------------------
 
