@@ -16,8 +16,20 @@ app.get('/', function(req, res) {
 // ---------------------   Messages   ----------------------
 
 app.post('/messages', middleware.requireAuthentication, function(req, res) {
-	var body = _.pick(req.body, 'text', 'conversationId');
+	var body = _.pick(req.body, 'text', 'conversationId', 'recipientUser');
 	// body.userId = req.user.get('id');
+
+	if (!body.hasOwnProperty('text') || !body.hasOwnProperty('conversationId')) {
+		return res.status(400).json({
+			error: "Needs text and conversationId properties"
+		});
+	}
+
+	db.conversation.findById(body.conversationId).then(function(conversation) {
+		if (!conversation) {
+			return res.status(404).send();
+		}
+	});
 
 	db.message.create(body).then(function(message) {
 		req.user.addMessage(message).then(function() {
@@ -26,7 +38,7 @@ app.post('/messages', middleware.requireAuthentication, function(req, res) {
 			res.json(message.toJSON());
 		})
 	}, function(e) {
-		res.status(400).send();
+		res.status(400).json(e);
 	})
 });
 
@@ -166,7 +178,7 @@ app.get('/conversations', middleware.requireAuthentication, function function_na
 		where: where
 	}).then(function(conversations) {
 		res.json(conversations);
-	}, function (e) {
+	}, function(e) {
 		res.status(404).send();
 	})
 })
