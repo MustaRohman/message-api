@@ -28,7 +28,7 @@ app.post('/messages', middleware.requireAuthentication, function(req, res) {
 	}, function(e) {
 		res.status(400).send();
 	})
-})
+});
 
 // GET /todos?search=hello
 
@@ -56,7 +56,7 @@ app.get('/messages', middleware.requireAuthentication, function(req, res) {
 		res.status(500).send();
 	})
 
-})
+});
 
 app.get('/messages/:id', middleware.requireAuthentication, function(req, res) {
 	var messageId = parseInt(req.params.id, 10);
@@ -75,7 +75,7 @@ app.get('/messages/:id', middleware.requireAuthentication, function(req, res) {
 	}, function(e) {
 		res.status(500).json(e);
 	})
-})
+});
 
 app.put('/messages/:id', middleware.requireAuthentication, function(req, res) {
 	var messageId = parseInt(req.params.id, 10);
@@ -105,7 +105,28 @@ app.put('/messages/:id', middleware.requireAuthentication, function(req, res) {
 		res.status(500).json(e);
 	})
 
-})
+});
+
+app.delete('/messages/:id', middleware.requireAuthentication, function(req, res) {
+	var messageId = parseInt(req.params.id, 10);
+
+	db.message.destroy({
+		where: {
+			id: messageId,
+			userId: req.user.id
+		}
+	}).then(function(rowsDestroyed) {
+		if (rowsDestroyed > 0) {
+			res.status(204).send();
+		} else {
+			res.status(404).json({
+				error: 'No message with id ' + messageId
+			});
+		}
+	}, function(e) {
+		res.status(500).send();
+	})
+});
 
 // ---------------------   Login   ----------------------
 
