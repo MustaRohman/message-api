@@ -16,8 +16,20 @@ app.get('/', function(req, res) {
 // ---------------------   Messages   ----------------------
 
 app.post('/messages', middleware.requireAuthentication, function(req, res) {
-	var body = _.pick(req.body, 'text');
+	var body = _.pick(req.body, 'text', 'conversationId', 'recipientUser');
 	// body.userId = req.user.get('id');
+
+	if (!body.hasOwnProperty('text') || !body.hasOwnProperty('conversationId')) {
+		return res.status(400).json({
+			error: "Needs text and conversationId properties"
+		});
+	}
+
+	db.conversation.findById(body.conversationId).then(function(conversation) {
+		if (!conversation) {
+			return res.status(404).send();
+		}
+	});
 
 	db.message.create(body).then(function(message) {
 		req.user.addMessage(message).then(function() {
@@ -26,7 +38,7 @@ app.post('/messages', middleware.requireAuthentication, function(req, res) {
 			res.json(message.toJSON());
 		})
 	}, function(e) {
-		res.status(400).send();
+		res.status(400).json(e);
 	})
 });
 
@@ -127,6 +139,99 @@ app.delete('/messages/:id', middleware.requireAuthentication, function(req, res)
 		res.status(500).send();
 	})
 });
+
+// ---------------------   Conversation   ----------------------
+
+app.post('/conversations', middleware.requireAuthentication, function(req, res) {
+	var body = _.pick(req.body, 'recipientUser', 'conversationName');
+	body.userId = req.user.get('id');
+
+	if (!body.hasOwnProperty('recipientUser')) {
+		return res.status(400).send();
+	}
+
+	// if (!body.hasOwnProperty('conversationName')) {
+	// 	body.conversationName = body.recipientUser;
+	// }
+
+
+	db.user.findOne({
+		where: {
+			email: body.recipientUser
+		}
+	}).then(function(user) {
+		if (user) {
+			db.conversation.create(body).then(function(conversation) {
+				res.json(conversation.toJSON());
+			}, function(e) {
+				res.status(500).json(e);
+			})
+		} else {
+			res.status(400).send();
+		}
+	}, function(e) {
+		res.status(500).send();
+	});
+});
+
+app.get('/conversations', middleware.requireAuthentication, function function_name(req, res) {
+	var where = {
+		userId: req.user.get('id')
+	}
+
+	db.conversation.findAll({
+		where: where
+	}).then(function(conversations) {
+		res.json(conversations);
+	}, function(e) {
+		res.status(404).send();
+	})
+});
+
+app.delete('/conversations/:id', middleware.requireAuthentication, function function_name(req, res) {
+	var conversationId = parseInt(req.params.id, 10);
+
+	db.conversation.destroy({
+		where: {
+			id: conversationId
+		}
+	}).then(function(rowsDestroyed) {
+		if (rowsDestroyed === 0) {
+			res.status(404).json({
+				error: 'No matching conversation with id ' + conversationId
+			});
+		} else {
+			res.status(204).send();
+		}
+	})
+});
+
+app.put('/conversations/:id', middleware.requireAuthentication, function(req, res) {
+	var conversationId = parseInt(req.params.id, 10);
+	var body = _.pick(req.body, 'conversationName');
+
+	if (!body.hasOwnProperty('conversationName')) {
+		return res.status(400).send();
+	}
+
+	db.conversation.findOne({
+		where: {
+			id: conversationId,
+			userId: req.user.id
+		}
+	}).then(function(conversation) {
+		if (!conversation) {
+			return res.status(404).send();
+		} else {
+			conversation.update(body).then(function (conversation) {
+				res.json(conversation.toJSON());
+			})
+		}
+	}, function (e) {
+		res.status(500).send();
+	})
+})
+
 
 // ---------------------   Login   ----------------------
 
