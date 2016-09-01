@@ -28,7 +28,7 @@ db.message.belongsTo(db.user);
 db.user.hasMany(db.conversation);
 db.user.hasMany(db.user);
 
-db.conversation.hasMany(db.message);
+db.conversation.hasMany(db.message, {onDelete:'cascade'});
 db.message.belongsTo(db.conversation);
 
 module.exports = db;

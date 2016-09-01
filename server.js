@@ -143,12 +143,17 @@ app.delete('/messages/:id', middleware.requireAuthentication, function(req, res)
 // ---------------------   Conversation   ----------------------
 
 app.post('/conversations', middleware.requireAuthentication, function(req, res) {
-	var body = _.pick(req.body, 'recipientUser');
+	var body = _.pick(req.body, 'recipientUser', 'conversationName');
 	body.userId = req.user.get('id');
 
 	if (!body.hasOwnProperty('recipientUser')) {
 		return res.status(400).send();
 	}
+
+	// if (!body.hasOwnProperty('conversationName')) {
+	// 	body.conversationName = body.recipientUser;
+	// }
+
 
 	db.user.findOne({
 		where: {
@@ -180,6 +185,24 @@ app.get('/conversations', middleware.requireAuthentication, function function_na
 		res.json(conversations);
 	}, function(e) {
 		res.status(404).send();
+	})
+})
+
+app.delete('/conversations/:id', middleware.requireAuthentication, function function_name(req, res) {
+	var conversationId = parseInt(req.params.id, 10);
+
+	db.conversation.destroy({
+		where: {
+			id: conversationId
+		}
+	}).then(function (rowsDestroyed) {
+		if (rowsDestroyed === 0) {
+			res.status(404).json({
+				error: 'No matching conversation with id ' + conversationId 
+			});
+		} else {
+			res.status(204).send();
+		}
 	})
 })
 
