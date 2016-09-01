@@ -70,6 +70,25 @@ app.get('/messages', middleware.requireAuthentication, function(req, res) {
 
 });
 
+app.get('/messages/:conversationId', middleware.requireAuthentication, function(req, res) {
+	var conversationId = parseInt(req.params.conversationId, 10);
+
+	db.message.findAll({
+		where: {
+			userId: req.user.id,
+			conversationId: conversationId
+		}
+	}).then(function(messages) {
+		if (messages) {
+			res.json(messages);
+		} else {
+			res.status(404).send();
+		}
+	}, function (e) {
+		res.status(500).json(e);
+	});
+})
+
 app.get('/messages/:id', middleware.requireAuthentication, function(req, res) {
 	var messageId = parseInt(req.params.id, 10);
 
@@ -223,11 +242,11 @@ app.put('/conversations/:id', middleware.requireAuthentication, function(req, re
 		if (!conversation) {
 			return res.status(404).send();
 		} else {
-			conversation.update(body).then(function (conversation) {
+			conversation.update(body).then(function(conversation) {
 				res.json(conversation.toJSON());
 			})
 		}
-	}, function (e) {
+	}, function(e) {
 		res.status(500).send();
 	})
 })
