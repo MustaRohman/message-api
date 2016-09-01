@@ -172,7 +172,7 @@ app.post('/conversations', middleware.requireAuthentication, function(req, res) 
 	}, function(e) {
 		res.status(500).send();
 	});
-})
+});
 
 app.get('/conversations', middleware.requireAuthentication, function function_name(req, res) {
 	var where = {
@@ -186,7 +186,7 @@ app.get('/conversations', middleware.requireAuthentication, function function_na
 	}, function(e) {
 		res.status(404).send();
 	})
-})
+});
 
 app.delete('/conversations/:id', middleware.requireAuthentication, function function_name(req, res) {
 	var conversationId = parseInt(req.params.id, 10);
@@ -195,14 +195,40 @@ app.delete('/conversations/:id', middleware.requireAuthentication, function func
 		where: {
 			id: conversationId
 		}
-	}).then(function (rowsDestroyed) {
+	}).then(function(rowsDestroyed) {
 		if (rowsDestroyed === 0) {
 			res.status(404).json({
-				error: 'No matching conversation with id ' + conversationId 
+				error: 'No matching conversation with id ' + conversationId
 			});
 		} else {
 			res.status(204).send();
 		}
+	})
+});
+
+app.put('/conversations/:id', middleware.requireAuthentication, function(req, res) {
+	var conversationId = parseInt(req.params.id, 10);
+	var body = _.pick(req.body, 'conversationName');
+
+	if (!body.hasOwnProperty('conversationName')) {
+		return res.status(400).send();
+	}
+
+	db.conversation.findOne({
+		where: {
+			id: conversationId,
+			userId: req.user.id
+		}
+	}).then(function(conversation) {
+		if (!conversation) {
+			return res.status(404).send();
+		} else {
+			conversation.update(body).then(function (conversation) {
+				res.json(conversation.toJSON());
+			})
+		}
+	}, function (e) {
+		res.status(500).send();
 	})
 })
 
